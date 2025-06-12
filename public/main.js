@@ -127,9 +127,26 @@ uploadForm.onsubmit = (e) => {
     method: 'POST',
     body: formData
   })
-  .then(res => {
-    if (!res.ok) return res.json().then(err => { throw err; });
-    return res.json();
+  .then(async res => {
+    const contentType = res.headers.get('content-type');
+    const isJSON = contentType && contentType.includes('application/json');
+
+    if (!res.ok) {
+      if (isJSON) {
+        const error = await res.json();
+        throw error;
+      } else {
+        const text = await res.text();
+        throw new Error('Upload failed: ' + text);
+      }
+    }
+
+    if (isJSON) {
+      return res.json();
+    } else {
+      const text = await res.text();
+      throw new Error('Unexpected non-JSON response: ' + text);
+    }
   })
   .then(() => {
     photoInput.value = '';

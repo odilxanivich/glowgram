@@ -12,7 +12,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'glowgram_uploads', // any folder name you like
+    folder: 'uploads', // any folder name you like
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
   },
 });
