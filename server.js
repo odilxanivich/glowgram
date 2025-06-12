@@ -15,6 +15,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+//vaqtinchalik
+const uploadRoutes = require('./routes/upload');
+
+app.use('/api', uploadRoutes);
+
 
 // Enable cross-origin requests and JSON parsing
 app.use(cors());
@@ -40,9 +45,8 @@ const ADMIN_SECRET = 'letmein123'; // your real upload code here
 let images = []; // structure: { id, filename, date, likes, dislikes }
 
 // File upload configuration — save images to public/uploads/
-const upload = multer({
-  dest: 'public/uploads/'
-});
+const { storage } = require('./cloudinary');
+const upload = multer({ storage });
 
 // ADMIN AUTH — Client sends secret code to unlock upload access
 app.post('/auth', (req, res) => {
