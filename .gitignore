@@ -1,0 +1,25 @@
+# === Node.js ===
+node_modules/
+package-lock.json
+
+# === Logs ===
+logs/
+*.log
+npm-debug.log*
+
+# === Uploaded Files (public/uploads folder) ===
+public/uploads/
+
+# === Environment variables ===
+.env
+
+# === OS / IDE / Editor files ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# === Misc ===
+*.pid
+*.tgz
+.cache/

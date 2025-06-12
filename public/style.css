@@ -1,0 +1,49 @@
+*{}
+body { font-family: 'Poppins', sans-serif; margin: 20px; }
+  #uploadForm { margin-bottom: 20px; }
+  .date-group { margin-bottom: 30px; }
+  .date-title { font-weight: bold; margin-bottom: 10px; }
+  .gallery { display: flex; flex-wrap: wrap; gap: 10px; }
+  .photo-container {
+    position: relative;
+    width: 150px;
+  }
+  .photo-container img {
+    width: 100%;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .vote-buttons {
+    position: absolute;
+    bottom: 5px; right: 5px;
+    display: flex;
+    gap: 5px;
+  }
+  .vote-btn {
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 3px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #fullscreenOverlay {
+    display: none;
+    position: fixed;
+    top:0; left:0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.9);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #fullscreenOverlay img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 10px;
+  }
+  #fullscreenOverlay:hover {
+    cursor: zoom-out;
+  }
+  .btn-primary, .btn-secondary {
+    color: white;
+  }

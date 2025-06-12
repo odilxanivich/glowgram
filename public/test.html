@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Glowgram</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="p-6">
+  <div style="transform: scale(0.5); transform-origin: top left; width: 200%; height: 200%;">
+    <h1 class="text-3xl font-bold mb-6 text-center">📸 Glowgram</h1>
+
+    <div class="flex flex-col lg:flex-row gap-4 mb-6">
+      <form id="uploadForm" class="flex-1 flex flex-col items-start gap-2">
+        <input type="file" id="photoInput" accept="image/*" class="file-input file-input-bordered w-full" required />
+        <button type="submit" class="btn btn-primary w-full">Upload</button>
+      </form>
+
+      <form id="urlForm" class="flex-1 flex flex-col items-start gap-2">
+        <input type="url" id="imageUrl" placeholder="Paste Pinterest image URL" class="input input-bordered w-full" required />
+        <button type="submit" class="btn btn-secondary w-full">Import</button>
+      </form>
+    </div>
+
+    <div id="galleryContainer" class="space-y-10"></div>
+
+    <div id="fullscreenOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden justify-center items-center z-50 cursor-zoom-out">
+      <img src="" alt="Fullscreen photo" class="max-w-[90vw] max-h-[90vh] rounded-lg" />
+    </div>
+  </div>
+
+  <!-- Scripts for functionality -->
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="main.js"></script>
+  <script src="import.js"></script>
+  <button class="vote-btn flex items-center gap-1 transition transform hover:scale-110 hover:text-blue-600 active:scale-95 px-2 py-1 rounded-lg bg-gradient-to-r from-white to-gray-100 shadow">
+  <i data-lucide="thumbs-up"></i> 12
+</button>
+</body>
+
+</html>
