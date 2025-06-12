@@ -124,41 +124,31 @@ uploadForm.onsubmit = (e) => {
   formData.append('photo', file);
 
   fetch('/upload', {
-    method: 'POST',
-    body: formData
-  })
-  .then(async res => {
-    const contentType = res.headers.get('content-type');
-    const isJSON = contentType && contentType.includes('application/json');
+  method: 'POST',
+  body: formData
+})
+.then(async (res) => {
+  const contentType = res.headers.get('content-type');
+  const isJSON = contentType && contentType.includes('application/json');
 
-    if (!res.ok) {
-      if (isJSON) {
-        const error = await res.json();
-        throw error;
-      } else {
-        const text = await res.text();
-        throw new Error('Upload failed: ' + text);
-      }
-    }
-
+  if (!res.ok) {
     if (isJSON) {
-      return res.json();
+      const error = await res.json();
+      throw new Error(error.error || 'Upload failed');
     } else {
       const text = await res.text();
-      throw new Error('Unexpected non-JSON response: ' + text);
+      throw new Error('Upload failed: ' + text);
     }
-  })
-  .then(() => {
-    photoInput.value = '';
-  })
-  .catch(err => {
-    if (err.message && err.message.includes('ONLY ADMINS')) {
-      askAdminCode();
-    } else {
-      alert(err.message || 'Upload failed.');
-    }
-  });
-};
+  }
+
+  return isJSON ? res.json() : Promise.reject(new Error('Unexpected response format'));
+})
+.then(() => {
+  photoInput.value = '';
+})
+.catch(err => {
+  alert(err.message || 'Upload failed.');
+});
 
 // Admin login prompt
 function askAdminCode() {
