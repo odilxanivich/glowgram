@@ -123,7 +123,7 @@ uploadForm.onsubmit = (e) => {
   const formData = new FormData();
   formData.append('photo', file);
 
-  fetch('/upload', {
+  fetch('/api/upload', {
   method: 'POST',
   body: formData
 })

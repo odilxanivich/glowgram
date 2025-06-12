@@ -15,12 +15,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-//vaqtinchalik
-const uploadRoutes = require('./routes/upload');
-
-app.use('/api', uploadRoutes);
-
-
 // Enable cross-origin requests and JSON parsing
 app.use(cors());
 app.use(express.json());
