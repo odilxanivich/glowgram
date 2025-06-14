@@ -1,10 +1,46 @@
-const galleryContainer = document.getElementById('galleryContainer');
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <title>Glowgram</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="p-6">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">Glowgram</h1>
+
+  <div class="flex flex-col lg:flex-row gap-4 mb-6">
+    <form id="uploadForm" class="flex-1 flex flex-col items-start gap-2">
+      <input type="file" id="photoInput" accept="image/*" class="file-input file-input-bordered w-full" required />
+      <button type="submit" class="btn btn-primary w-full">📤 Upload</button>
+    </form>
+
+    <form id="urlForm" class="flex-1 flex flex-col items-start gap-2">
+      <input type="url" name="image" id="imageUrl" placeholder="Paste Pinterest image URL" class="input input-bordered w-full" required />
+      <button type="submit" class="btn btn-secondary w-full">📥 Import</button>
+    </form>
+  </div>
+
+  <div id="galleryContainer" class="space-y-10"></div>
+
+  <div id="fullscreenOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden justify-center items-center z-50 cursor-zoom-out">
+    <img src="" alt="Fullscreen photo" class="max-w-[90vw] max-h-[90vh] rounded-lg" />
+  </div>
+
+  <!-- Scripts for functionality -->
+  <script>
+    const galleryContainer = document.getElementById('galleryContainer');
 const uploadForm = document.getElementById('uploadForm');
 const photoInput = document.getElementById('photoInput');
 const fullscreenOverlay = document.getElementById('fullscreenOverlay');
 const fullscreenImg = fullscreenOverlay.querySelector('img');
 
-const socket = io('https://glowgram.onrender.com/');
+const socket = io('http://localhost:3000');
 
 let images = [];
 
@@ -40,7 +76,7 @@ function renderGallery() {
       container.className = 'photo-container';
 
       const image = document.createElement('img');
-      image.src = img.filename;
+      image.src = `/uploads/${img.filename}`;
       image.alt = 'Deleted Image';
       image.onclick = () => openFullscreen(image.src);
 
@@ -68,7 +104,7 @@ function renderGallery() {
 
       // # Download button
       const downloadBtn = document.createElement('a');
-      downloadBtn.href = img.filename.replace('/upload/', '/upload/fl_attachment/');
+      downloadBtn.href = `/uploads/${img.filename}`;
       downloadBtn.download = img.filename;
       downloadBtn.className = 'vote-btn flex items-center gap-1';       //# Styled like others
       downloadBtn.innerHTML = `<i data-lucide="download" width="16" height="16" class="text-blue-500 hover:text-gray-800 transition-all duration-200"></i>`;
@@ -188,3 +224,9 @@ socket.on('vote-update', ({ id, likes, dislikes }) => {
 });
 
 fetchImages();
+  </script>
+
+
+
+</body>
+</html>
