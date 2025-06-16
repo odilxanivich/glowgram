@@ -4,38 +4,96 @@
   <title>Glowgram</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Glowgram – A real-time image sharing gallery powered by Cloudinary and Socket.IO." />
+  <meta name="keywords" content="Glowgram, image gallery, real-time, cloudinary, socket.io, daisyui, tailwindcss" />
+  <meta name="author" content="Mizano" />
+
+  <link rel="icon" type="image/png" href="logo.png" />
   <link rel="stylesheet" href="style.css">
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.0.0/dist/full.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="p-6">
 
-  <h1 class="text-3xl font-bold mb-6 text-center">Glowgram</h1>
+<h1 class="text-3xl font-bold mb-6 text-center">Glowgram</h1>
 
-  <div class="flex flex-col lg:flex-row gap-4 mb-6">
-    <form id="uploadForm" class="flex-1 flex flex-col items-start gap-2">
-      <input type="file" id="photoInput" accept="image/*" class="file-input file-input-bordered w-full" required />
-      <button type="submit" class="btn btn-primary w-full">📤 Upload</button>
-    </form>
+<div class="flex flex-col lg:flex-row gap-4 mb-6">
+  <form id="uploadForm" class="flex-1 flex flex-col items-start gap-2">
+    <input type="file" id="photoInput" accept="image/*" class="file-input file-input-bordered w-full" required />
+    <button type="submit" class="btn btn-primary w-full">📤 Upload</button>
+  </form>
 
-    <form id="urlForm" class="flex-1 flex flex-col items-start gap-2">
-      <input type="url" name="image" id="imageUrl" placeholder="Paste Pinterest image URL" class="input input-bordered w-full" required />
-      <button type="submit" class="btn btn-secondary w-full">📥 Import</button>
-    </form>
+  <form id="urlForm" class="flex-1 flex flex-col items-start gap-2">
+    <input type="url" name="image" id="imageUrl" placeholder="Paste image URL" class="input input-bordered w-full" required />
+    <button type="submit" class="btn btn-secondary w-full">📥 Import</button>
+  </form>
+</div>
+
+<div id="galleryContainer" class="space-y-10"></div>
+
+<footer class="bg-white border-t border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+    <p class="text-xs text-gray-500 text-center sm:text-left">&copy; 2024 Mizano, Inc. All rights reserved.</p>
+    <div class="flex flex-wrap justify-center sm:justify-start space-x-4">
+      <a href="https://www.instagram.com/odilxanivich_/" class="text-gray-400 hover:text-pink-500">
+        <i data-lucide="instagram" class="w-5 h-5"></i>
+      </a>
+      <a href="https://github.com/odilxanivich" class="text-gray-400 hover:text-gray-700">
+        <i data-lucide="github" class="w-5 h-5"></i>
+      </a>
+      <a href="https://mizano.netlify.app/" class="text-gray-400 hover:text-red-600">
+        <i data-lucide="globe" class="w-5 h-5"></i>
+      </a>
+      <a href="https://www.youtube.com/@odilxanivich/" class="text-gray-400 hover:text-red-600">
+        <i data-lucide="youtube" class="w-5 h-5"></i>
+      </a>
+      <a href="https://x.com/odilxanivich" class="text-gray-400 hover:text-red-600">
+        <i data-lucide="twitter" class="w-5 h-5"></i>
+      </a>
+    </div>
   </div>
+</footer>
 
-  <div id="galleryContainer" class="space-y-10"></div>
+<div id="fullscreenOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden justify-center items-center z-50 cursor-zoom-out">
+  <img class="max-w-full max-h-full rounded-lg shadow-lg" />
+</div>
 
-  <div id="fullscreenOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden justify-center items-center z-50 cursor-zoom-out">
-    <img src="" alt="Fullscreen photo" class="max-w-[90vw] max-h-[90vh] rounded-lg" />
-  </div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="main.js"></script>
+<script>lucide.createIcons();</script>
+<script>
+    const urlForm = document.getElementById('urlForm');
+    const imageUrlInput = document.getElementById('imageUrl');
 
-  <!-- Scripts for functionality -->
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-  <script src="main.js"></script>
-  <script src="import.js"></script>
+    urlForm.onsubmit = (e) => {
+      e.preventDefault();
+      const url = imageUrlInput.value;
+      if (!url) return;
 
+      fetch('/import-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      })
+      .then(res => {
+        if (!res.ok) return res.text().then(msg => { throw new Error(msg); });
+        return res.json();
+      })
+      .then(() => {
+        imageUrlInput.value = '';
+      })
+      .catch(err => {
+        if (err.message && err.message.includes('ONLY ADMINS')) {
+          askAdminCode(); // uses function defined in main.js
+        } else {
+          alert(err.message || 'Image import failed.');
+        }
+      });
+    };
+  </script>
 </body>
 </html>

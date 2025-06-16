@@ -1,9 +1,8 @@
-*{}
-body { font-family: 'Poppins', sans-serif; margin: 20px; }
+body { font-family: 'Montserrat', sans-serif;
   #uploadForm { margin-bottom: 20px; }
   .date-group { margin-bottom: 30px; }
   .date-title { font-weight: bold; margin-bottom: 10px; }
-  .gallery { display: flex; flex-wrap: wrap; gap: 10px; }
+  .gallery { display: flex; flex-wrap: wrap; gap: 1rem; }
   .photo-container {
     position: relative;
     width: 150px;

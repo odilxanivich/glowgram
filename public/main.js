@@ -4,7 +4,10 @@ const photoInput = document.getElementById('photoInput');
 const fullscreenOverlay = document.getElementById('fullscreenOverlay');
 const fullscreenImg = fullscreenOverlay.querySelector('img');
 
-const socket = io('https://glowgram.onrender.com/');
+let startX = 0;
+let currentIndex = 0;
+
+const socket = io(); // local server
 
 let images = [];
 
@@ -26,76 +29,110 @@ function renderGallery() {
     const div = document.createElement('div');
     div.className = 'date-group';
     const title = document.createElement('div');
-    title.className = 'date-title';
+    title.className = 'date-title font-semibold mb-2';
     title.textContent = date;
     div.appendChild(title);
 
     const gallery = document.createElement('div');
-    gallery.className = 'gallery';
+    gallery.className = 'gallery grid grid-cols-2 md:grid-cols-3 gap-4';
 
-    grouped[date]
-        .sort((a, b) => parseInt(b.id) - parseInt(a.id))  // newest images first
-        .forEach(img => {
+    grouped[date].sort((a, b) => parseInt(b.id) - parseInt(a.id)).forEach(img => {
       const container = document.createElement('div');
       container.className = 'photo-container';
 
       const image = document.createElement('img');
-      image.src = img.filename;
-      image.alt = 'Deleted Image';
+      image.src = img.filename; // already prefixed with /uploads/
+      image.alt = 'Image';
+      image.className = 'rounded cursor-pointer hover:scale-105 transition';
       image.onclick = () => openFullscreen(image.src);
 
       const voteDiv = document.createElement('div');
-      voteDiv.className = 'vote-buttons flex items-center gap-2 mt-2';  //# Updated: added flex styling for modern layout
+      voteDiv.className = 'vote-buttons flex items-center gap-2 mt-2';
 
       const likeBtn = document.createElement('button');
-      likeBtn.className = 'vote-btn flex items-center gap-1';           //# Updated: modern look with icon + text
-      likeBtn.innerHTML = `<i data-lucide="thumbs-up" width="16" height="16" bg-transparent class="text-green-600"></i> <span class="text-sm">${img.likes}</span>`;  //# Changed to Lucide icon
+      likeBtn.className = 'vote-btn flex items-center gap-1';
+      likeBtn.innerHTML = `<i data-lucide="thumbs-up" width="16" height="16" class="text-green-600"></i> <span class="text-sm">${img.likes}</span>`;
       likeBtn.onclick = (e) => {
         e.stopPropagation();
         sendVote(img.id, 'like');
       };
 
       const dislikeBtn = document.createElement('button');
-      dislikeBtn.className = 'vote-btn flex items-center gap-1';         //# Updated: modern look with icon + text
-      dislikeBtn.innerHTML = `<i data-lucide="thumbs-down" width="16" height="16" class="text-red-500"></i> <span class="text-sm">${img.dislikes}</span>`;  //# Changed to Lucide icon
+      dislikeBtn.className = 'vote-btn flex items-center gap-1';
+      dislikeBtn.innerHTML = `<i data-lucide="thumbs-down" width="16" height="16" class="text-red-500"></i> <span class="text-sm">${img.dislikes}</span>`;
       dislikeBtn.onclick = (e) => {
         e.stopPropagation();
         sendVote(img.id, 'dislike');
       };
 
+      const downloadBtn = document.createElement('a');
+      downloadBtn.href = img.filename;
+      downloadBtn.download = img.filename.split('/').pop();
+      downloadBtn.className = 'vote-btn flex items-center gap-1';
+      downloadBtn.innerHTML = `<i data-lucide="download" width="16" height="16" class="text-blue-500 hover:text-gray-800 transition-all duration-200"></i>`;
+      downloadBtn.onclick = (e) => e.stopPropagation();
+
       voteDiv.appendChild(likeBtn);
       voteDiv.appendChild(dislikeBtn);
-
-      // # Download button
-      const downloadBtn = document.createElement('a');
-      downloadBtn.href = img.filename.replace('/upload/', '/upload/fl_attachment/');
-      downloadBtn.download = img.filename;
-      downloadBtn.className = 'vote-btn flex items-center gap-1';       //# Styled like others
-      downloadBtn.innerHTML = `<i data-lucide="download" width="16" height="16" class="text-blue-500 hover:text-gray-800 transition-all duration-200"></i>`;
-      downloadBtn.onclick = (e) => e.stopPropagation(); // prevent fullscreen opening
       voteDiv.appendChild(downloadBtn);
 
       container.appendChild(image);
       container.appendChild(voteDiv);
-
       gallery.appendChild(container);
     });
 
     div.appendChild(gallery);
-    galleryContainer.prepend(div);
+    galleryContainer.appendChild(div);
   });
-  lucide.createIcons();  //# Added: initialize icons after rendering
+
+  lucide.createIcons();
 }
 
 function openFullscreen(src) {
   fullscreenImg.src = src;
   fullscreenOverlay.style.display = 'flex';
+  fullscreenOverlay.classList.remove('hidden');
+  currentIndex = images.findIndex(img => img.filename === src);
 }
-
 fullscreenOverlay.onclick = () => {
+  fullscreenOverlay.classList.add('hidden');
   fullscreenOverlay.style.display = 'none';
   fullscreenImg.src = '';
 };
+
+//swipe function
+fullscreenOverlay.addEventListener('touchstart', (e) => {
+  startX = e.touches[0].clientX;
+}, false);
+
+fullscreenOverlay.addEventListener('touchend', (e) => {
+  const endX = e.changedTouches[0].clientX;
+  const diff = startX - endX;
+
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) {
+      showNextImage(); // swipe left
+    } else {
+      showPrevImage(); // swipe right
+    }
+  }
+});
+//naviagtion function
+function showNextImage() {
+  if (currentIndex < images.length - 1) {
+    currentIndex++;
+    fullscreenImg.src = images[currentIndex].filename;
+  }
+}
+
+function showPrevImage() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    fullscreenImg.src = images[currentIndex].filename;
+  }
+}
+
+
 
 function fetchImages() {
   fetch('/images')
@@ -109,12 +146,11 @@ function fetchImages() {
 function sendVote(id, vote) {
   fetch('/vote', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, vote })
-  }).then(res => res.json());
+  });
 }
 
-// Upload with admin check
 uploadForm.onsubmit = (e) => {
   e.preventDefault();
   const file = photoInput.files[0];
@@ -123,34 +159,26 @@ uploadForm.onsubmit = (e) => {
   const formData = new FormData();
   formData.append('photo', file);
 
-  fetch('upload', {
-  method: 'POST',
-  body: formData
-})
-.then(async (res) => {
-  const contentType = res.headers.get('content-type');
-  const isJSON = contentType && contentType.includes('application/json');
-
-  if (!res.ok) {
-    if (isJSON) {
-      const error = await res.json();
-      throw new Error(error.error || 'Upload failed');
+  fetch('/upload', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    if (!res.ok) return res.text().then(msg => { throw new Error(msg); });
+    return res.json();
+  })
+  .then(() => {
+    photoInput.value = '';
+  })
+  .catch(err => {
+    if (err.message.includes('ONLY ADMINS')) {
+      askAdminCode();
     } else {
-      const text = await res.text();
-      throw new Error('Upload failed: ' + text);
+      alert(err.message || 'Upload failed.');
     }
-  }
+  });
+};
 
-  return isJSON ? res.json() : Promise.reject(new Error('Unexpected response format'));
-})
-.then(() => {
-  photoInput.value = '';
-})
-.catch(err => {
-  alert(err.message || 'Upload failed.');
-});
-
-// Admin login prompt
 function askAdminCode() {
   const code = prompt("ONLY ADMINS CAN UPLOAD!\nWanna be with us?\nMessage me.\n\nIf you have the code, enter it:");
   if (!code) return;
@@ -158,7 +186,7 @@ function askAdminCode() {
   fetch('/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // <=== BU MUHIM
+    credentials: 'include',
     body: JSON.stringify({ code })
   })
   .then(res => res.json())
@@ -172,7 +200,7 @@ function askAdminCode() {
   .catch(() => alert("Error authenticating."));
 }
 
-// Real-time listeners
+// Real-time updates
 socket.on('new-image', (img) => {
   images.unshift(img);
   renderGallery();

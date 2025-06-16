@@ -1,6 +1,6 @@
 // Required Modules
-const axios = require('axios');
-const { v4: uuidv4 } = require('uuid');
+require('dotenv').config(); // Load environment variables
+
 const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
@@ -8,10 +8,11 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
-require('dotenv').config();
 
-// Cloudinary Setup (Embedded Here)
+// Cloudinary Config
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
@@ -21,39 +22,46 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Multer Cloudinary Storage
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'uploads', // your Cloudinary folder name
+    folder: 'glowgram',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
   },
 });
-
 const upload = multer({ storage });
 
-// App & Socket.IO Setup
+// Express + HTTP + Socket.IO setup
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Change to your frontend origin if hosted separately
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(express.static('public'));
-app.use('/uploads', express.static('public/uploads'));
+app.use(express.static('public')); // For serving static frontend files
 app.use(session({
-  secret: 'superSecret123',
+  secret: 'superSecretSessionKey123', // should be long + random
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
 }));
 
-// Admin upload secret
-const ADMIN_SECRET = 'letmein123';
+// Admin secret
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'letmein123';
 
-// Image Storage
-let images = []; // structure: { id, filename, date, likes, dislikes }
+// In-memory image list
+let images = []; // { id, filename, date, likes, dislikes }
 
-// ADMIN AUTH
+// Routes
+
+// Admin Auth
 app.post('/auth', (req, res) => {
   const { code } = req.body;
   if (code === ADMIN_SECRET) {
@@ -63,20 +71,22 @@ app.post('/auth', (req, res) => {
   return res.status(401).json({ success: false, message: 'Wrong code' });
 });
 
-// UPLOAD — via form
+//create a folder
+const uploadsPath = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+// Upload from file
 app.post('/upload', upload.single('photo'), (req, res) => {
   if (!req.session.isAdmin) {
-    return res.status(403).json({
-      success: false,
-      message: 'ONLY ADMINS CAN UPLOAD! WANNA BE WITH US? MESSAGE ME.'
-    });
+    return res.status(403).json({ success: false, message: 'ONLY ADMINS CAN UPLOAD! WANNA BE WITH US? MESSAGE ME.' });
   }
 
   if (!req.file) return res.status(400).send('No file uploaded');
 
   const img = {
     id: Date.now().toString(),
-    filename: req.file.path, // Cloudinary returns URL in .path
+    filename: req.file.path, // Cloudinary public URL
     date: new Date().toISOString().split('T')[0],
     likes: 0,
     dislikes: 0,
@@ -87,39 +97,46 @@ app.post('/upload', upload.single('photo'), (req, res) => {
   res.json(img);
 });
 
-// IMPORT IMAGE — from Pinterest or external URL
+// Import from URL
 app.post('/import-image', async (req, res) => {
   if (!req.session.isAdmin) {
-    return res.status(403).json({ success: false, message: 'ONLY ADMINS CAN IMPORT! MESSAGE ME.' });
+    return res.status(403).json({ success: false, message: 'ONLY ADMINS CAN IMPORT! WANNA BE WITH US? MESSAGE ME.' });
   }
 
   const { url } = req.body;
   if (!url || !url.startsWith('http')) return res.status(400).send('Invalid URL');
 
   try {
-    const response = await axios({
-      url,
-      responseType: 'stream',
-    });
-
+    // Download image to a temporary file
     const ext = path.extname(url).split('?')[0] || '.jpg';
     const filename = uuidv4() + ext;
-    const filepath = path.join(__dirname, 'public/uploads', filename);
+    const filepath = path.join(__dirname, 'tmp', filename);
 
+    const response = await axios({ url, responseType: 'stream' });
     const writer = fs.createWriteStream(filepath);
     response.data.pipe(writer);
 
-    writer.on('finish', () => {
-      const img = {
-        id: Date.now().toString(),
-        filename,
-        date: new Date().toISOString().split('T')[0],
-        likes: 0,
-        dislikes: 0,
-      };
-      images.push(img);
-      io.emit('new-image', img);
-      res.json(img);
+    writer.on('finish', async () => {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(filepath, {
+          folder: 'glowgram',
+        });
+
+        const img = {
+          id: Date.now().toString(),
+          filename: uploadResult.secure_url,
+          date: new Date().toISOString().split('T')[0],
+          likes: 0,
+          dislikes: 0,
+        };
+
+        images.push(img);
+        io.emit('new-image', img);
+        fs.unlinkSync(filepath); // delete temp file
+        res.json(img);
+      } catch (err) {
+        res.status(500).send('Failed to upload to Cloudinary');
+      }
     });
 
     writer.on('error', () => {
@@ -131,12 +148,7 @@ app.post('/import-image', async (req, res) => {
   }
 });
 
-// GET ALL IMAGES
-app.get('/images', (req, res) => {
-  res.json(images);
-});
-
-// VOTING — Like / Dislike
+// Voting
 app.post('/vote', (req, res) => {
   const { id, vote } = req.body;
   const img = images.find(i => i.id === id);
@@ -150,12 +162,17 @@ app.post('/vote', (req, res) => {
   res.json(img);
 });
 
-// SOCKET.IO
+// Get all images
+app.get('/images', (req, res) => {
+  res.json(images);
+});
+
+// Socket.IO
 io.on('connection', (socket) => {
   console.log('User connected');
 });
 
-// START SERVER
+// Start Server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

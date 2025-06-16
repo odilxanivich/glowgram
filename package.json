@@ -9,7 +9,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "axios": "^1.9.0",
     "cloudinary": "^1.41.3",
@@ -22,5 +21,17 @@
     "multer-storage-cloudinary": "^4.0.0",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
-  }
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/odilxanivich/glowgram.git"
+  },
+  "bugs": {
+    "url": "https://github.com/odilxanivich/glowgram/issues"
+  },
+  "homepage": "https://github.com/odilxanivich/glowgram#readme",
+  "description": ""
 }
