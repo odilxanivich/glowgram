@@ -2,7 +2,7 @@
 
 **Glowgram** is a real-time image-sharing gallery powered by [Cloudinary](https://cloudinary.com/) and [Socket.IO](https://socket.io/). It allows users to upload or import images, view them instantly in a dynamic gallery, and experience a modern, responsive interface built with [Tailwind CSS](https://tailwindcss.com/) and [daisyUI](https://daisyui.com/).
 
-[Glowgram Screenshot]( Screenshot 2025-07-10 191822.png ) <!-- Add a real screenshot if available -->
+[Glowgram Screenshot]( Screenshot.png ) <!-- Add a real screenshot if available -->
 
 ## Features
 
