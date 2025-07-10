@@ -97,7 +97,7 @@ app.post('/upload', upload.single('photo'), (req, res) => {
   res.json(img);
 });
 
-// Import from URL
+// Import from URL (fixed version with buffer)
 app.post('/import-image', async (req, res) => {
   if (!req.session.isAdmin) {
     return res.status(403).json({ success: false, message: 'ONLY ADMINS CAN IMPORT! WANNA BE WITH US? MESSAGE ME.' });
@@ -107,24 +107,30 @@ app.post('/import-image', async (req, res) => {
   if (!url || !url.startsWith('http')) return res.status(400).send('Invalid URL');
 
   try {
-    // Download image to a temporary file
-    const ext = path.extname(url).split('?')[0] || '.jpg';
-    const filename = uuidv4() + ext;
-    const filepath = path.join(__dirname, 'tmp', filename);
+    // Fetch image from Pinterest as buffer
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Referer': 'https://www.pinterest.com/'
+      }
+    });
 
-    const response = await axios({ url, responseType: 'stream' });
-    const writer = fs.createWriteStream(filepath);
-    response.data.pipe(writer);
+    const imageBuffer = Buffer.from(response.data, 'binary');
 
-    writer.on('finish', async () => {
-      try {
-        const uploadResult = await cloudinary.uploader.upload(filepath, {
-          folder: 'glowgram',
-        });
+    // Upload to Cloudinary via stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'glowgram' },
+      (error, result) => {
+        if (error) {
+          console.error('Cloudinary error:', error);
+          return res.status(500).json({ error: 'Cloudinary upload failed', details: error.message });
+        }
 
         const img = {
           id: Date.now().toString(),
-          filename: uploadResult.secure_url,
+          filename: result.secure_url,
           date: new Date().toISOString().split('T')[0],
           likes: 0,
           dislikes: 0,
@@ -132,19 +138,15 @@ app.post('/import-image', async (req, res) => {
 
         images.push(img);
         io.emit('new-image', img);
-        fs.unlinkSync(filepath); // delete temp file
         res.json(img);
-      } catch (err) {
-        res.status(500).send('Failed to upload to Cloudinary');
       }
-    });
+    );
 
-    writer.on('error', () => {
-      res.status(500).send('Failed to save image');
-    });
+    uploadStream.end(imageBuffer);
 
   } catch (err) {
-    res.status(500).send('Failed to fetch image');
+    console.error('Fetch error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch or upload image', details: err.message });
   }
 });
 
